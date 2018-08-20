@@ -75,7 +75,7 @@ const names = fs.readFileSync('users.txt', 'utf-8').toString().split("\n").filte
   console.log(names)
 
   const browser = await puppeteer.launch({
-      headless: false
+      headless: true
   })
 
   let page = await browser.newPage()
