@@ -1,11 +1,11 @@
-const puppeteer = require('puppeteer');
-const fs = require('fs');
+const puppeteer = require('puppeteer')
+const fs = require('fs')
 
 const sleep = (time) => {
     return new Promise((resolve, reject) => {
         setTimeout(() => {
-            resolve();
-        }, time);
+            resolve()
+        }, time)
     });
 }
 
