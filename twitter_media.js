@@ -64,14 +64,15 @@ const extractMediaUrls = async (page, name) => {
     owari = ret.owari
     images = ret.images
 
-    if (images.length > 100) {break}
+    if (images.length > 10) {break}
   }
   return new Promise(resolve => resolve(images))
 }
 
 
 (async () => {
-  const names = fs.readFileSync('users.txt', 'utf-8').toString().split("\n")
+const names = fs.readFileSync('users.txt', 'utf-8').toString().split("\n").filter((text) => text != '')
+  console.log(names)
 
   const browser = await puppeteer.launch({
       headless: false
@@ -81,21 +82,29 @@ const extractMediaUrls = async (page, name) => {
   await page.setViewport({ width: 1366, height: 768})
   await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.32 Safari/537.36')
 
+  let user_image = []
   for (let j = 0; j < names.length; j++) {
     const name = names[j]
-    const status_ids = await extractMediaUrls(page, name)
+    let status_ids = await extractMediaUrls(page, name)
+    status_ids = status_ids.splice(0, 1)
     let image_urls = []
     for (let i = 0; i < status_ids.length; i++) {
-        await page.goto(`https://twitter.com/${name}/status/${status_ids[i]}`, {'waitUntil': 'networkidle0'})
-        await page.waitForNavigation({waitUntil: 'networkidle0'})
-        const urls = await page.evaluate(() => {
-          const urls = Array.from(document.querySelectorAll('[data-image-url]'), e => e.dataset.imageUrl)
-          return urls
-        })
-        console.log(urls)
-        image_urls.push(new Promise(resolve => resolve(urls)))
+      await page.goto(`https://twitter.com/${name}/status/${status_ids[i]}`, {'waitUntil': 'domcontentloaded'})
+      await page.waitForNavigation({waitUntil: 'networkidle0'})
+      const urls = await page.evaluate(() =>
+        Array.from(document.querySelectorAll('[data-image-url]'), e => e.dataset.imageUrl)
+      )
+      image_urls = image_urls.concat(urls)
     }
-    console.log(image_urls)
+    user_image.push({user: name, image_urls: image_urls})
   }
   await browser.close()
+
+  let content = user_image.reduce((text, current) => {
+    return text + "\n" + JSON.stringify(current)
+  })
+
+  for (let k = 0; k < user_image.length; k++) {
+    fs.appendFile('output.txt', JSON.stringify(user_image[k]) + "\n", (err) => {})
+  }
 })()
